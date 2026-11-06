@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
 import { SupportedLanguage } from '../../database/types.js';
 import { Command } from '../../types/index.js';
@@ -27,7 +27,7 @@ export const languageCommand: Command = {
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
       await interaction.reply({
         content: '❌ You need Manage Server permission to change the server language.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -44,4 +44,3 @@ export const languageCommand: Command = {
     await interaction.reply({ content: messages[selected] });
   },
 };
-

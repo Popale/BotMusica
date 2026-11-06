@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
 import { getTranslation } from '../../i18n/index.js';
 import { LastFmService } from '../../services/LastFmService.js';
@@ -49,7 +49,7 @@ export const lastfmCommand: Command = {
       await client.guildRepo.updateUser(userId, { lastfmUsername: username, scrobbleEnabled: true });
       await interaction.reply({
         content: getTranslation(lang, 'lastfm.linked', { username }),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -58,14 +58,14 @@ export const lastfmCommand: Command = {
       const enabled = interaction.options.getBoolean('activo', true);
       await client.guildRepo.updateUser(userId, { scrobbleEnabled: enabled });
       const msg = enabled ? getTranslation(lang, 'lastfm.scrobbleEnabled') : getTranslation(lang, 'lastfm.scrobbleDisabled');
-      await interaction.reply({ content: msg, ephemeral: true });
+      await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (sub === 'nowplaying') {
       const user = await client.guildRepo.getUser(userId);
       if (!user.lastfmUsername) {
-        await interaction.reply({ content: getTranslation(lang, 'lastfm.notLinked'), ephemeral: true });
+        await interaction.reply({ content: getTranslation(lang, 'lastfm.notLinked'), flags: MessageFlags.Ephemeral });
         return;
       }
 
@@ -101,4 +101,3 @@ export const lastfmCommand: Command = {
     }
   },
 };
-

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { RepeatMode } from 'distube';
 import type { BotClient } from '../../client/BotClient.js';
 import { MusicEmbeds } from '../../music/MusicEmbeds.js';
@@ -29,7 +29,7 @@ export const loopCommand: Command = {
     const queue = client.distube.getQueue(guildId);
     if (!queue) {
       const embed = MusicEmbeds.error('Sin Reproducción', 'No hay ninguna cola activa.');
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 

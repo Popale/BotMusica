@@ -49,12 +49,22 @@ export class BotClient extends Client {
       ? { clientId: env.spotifyClientId, clientSecret: env.spotifyClientSecret }
       : undefined;
 
+    const resolvedFfmpegPath: string =
+      typeof ffmpegStatic === 'string'
+        ? ffmpegStatic
+        : typeof ffmpegStatic === 'object' &&
+          ffmpegStatic !== null &&
+          'default' in ffmpegStatic &&
+          typeof (ffmpegStatic as { default: unknown }).default === 'string'
+        ? (ffmpegStatic as { default: string }).default
+        : 'ffmpeg';
+
     this.distube = new DisTube(this, {
       emitNewSongOnly: true,
       emitAddSongWhenCreatingQueue: false,
       emitAddListWhenCreatingQueue: false,
       ffmpeg: {
-        path: ffmpegStatic || 'ffmpeg',
+        path: resolvedFfmpegPath,
       },
       plugins: [
         new SpotifyPlugin({ api: spotifyApi }) as unknown as DisTubePlugin,

@@ -1,6 +1,7 @@
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
+  MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
@@ -68,7 +69,7 @@ export const djCommand: Command = {
           'Permisos Insuficientes',
           'Necesitas permisos de **Administrador** o **Gestionar Servidor** para cambiar la configuración de DJ.'
         );
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
         return;
       }
     }

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
 import { Command } from '../../types/index.js';
 
@@ -29,7 +29,7 @@ export const themeCommand: Command = {
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
       await interaction.reply({
         content: '❌ You need Manage Server permission to change the theme.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -46,4 +46,3 @@ export const themeCommand: Command = {
     await interaction.reply({ embeds: [embed] });
   },
 };
-

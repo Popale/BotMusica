@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
 import { MusicEmbeds } from '../../music/MusicEmbeds.js';
 import { formatDuration } from '../../music/utils/progressBar.js';
@@ -40,7 +40,7 @@ export const seekCommand: Command = {
     const queue = client.distube.getQueue(guildId);
     if (!queue || queue.songs.length === 0) {
       const embed = MusicEmbeds.error('Sin Reproducción', 'No hay ninguna canción reproduciéndose.');
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -53,7 +53,7 @@ export const seekCommand: Command = {
         'Formato Inválido',
         'Por favor ingresa un formato de tiempo válido (ejemplos: `90`, `01:30`, `01:15:00`).'
       );
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -62,7 +62,7 @@ export const seekCommand: Command = {
         'Tiempo Fuera de Rango',
         `La canción dura solo **${currentSong.formattedDuration}** (${currentSong.duration} segundos).`
       );
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 
