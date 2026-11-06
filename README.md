@@ -1,10 +1,6 @@
 # 🎵 Advanced Discord Music Bot
 
 <p align="center">
-  <img src="description_images/showcase_header.png" alt="Discord Music Bot Banner" width="100%">
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Node.js-18%2B%20%7C%2022%20%7C%2024-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/TypeScript-5.8%2B-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Discord.js-v14.18-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord.js">
