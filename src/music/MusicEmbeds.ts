@@ -177,22 +177,48 @@ export class MusicEmbeds {
 
     if (queue && queue.songs.length > 0) {
       const current = queue.songs[0];
-      const upcoming = queue.songs.slice(1, 11);
-      const upcomingList = upcoming.length > 0
-        ? upcoming.map((s, i) => `\`${i + 1}.\` **${s.name}** - \`${s.formattedDuration}\``).join('\n')
-        : getTranslation(lang, 'player.noSongsInQueue');
+      const sourceName = current.url?.includes('spotify')
+        ? 'Spotify'
+        : current.url?.includes('soundcloud')
+        ? 'SoundCloud'
+        : 'YouTube';
+      const artist = current.uploader?.name || getTranslation(lang, 'common.unknownArtist');
 
-      embed.setDescription(`**${getTranslation(lang, 'common.nowPlaying')}:** [${current.name}](${current.url}) (\`${current.formattedDuration}\`)\n\n**${getTranslation(lang, 'player.songsInQueue')}**:\n${upcomingList}`)
+      const upcoming = queue.songs.slice(1, 11);
+      const upcomingList =
+        upcoming.length > 0
+          ? upcoming
+              .map((s, i) => `\`${i + 1}.\` **${s.name ?? 'Track'}** - \`${s.formattedDuration ?? '00:00'}\``)
+              .join('\n')
+          : getTranslation(lang, 'player.noSongsInQueue');
+
+      embed
+        .setAuthor({
+          name: `💿 ${getTranslation(lang, queue.paused ? 'common.paused' : 'player.header')}`,
+        })
+        .setDescription(
+          `**${getTranslation(lang, 'common.nowPlaying')}:** [${current.name ?? 'Track'}](${current.url ?? ''})\n\n` +
+            `🎤 **${artist}** 🎵 \u2000|\u2000 ⏱️ **${current.formattedDuration ?? '00:00'}**\n` +
+            `🔊 **${queue.volume}%** \u2000|\u2000 ..:: **${sourceName}**\n\n` +
+            `**${getTranslation(lang, 'player.songsInQueue')}:**\n${upcomingList}`
+        )
         .setFooter({
           text: getTranslation(lang, 'player.tracksLeft', {
-            count: queue.songs.length - 1,
+            count: Math.max(0, queue.songs.length - 1),
             duration: queue.formattedDuration || '00:00',
           }),
         });
 
       if (current.thumbnail) embed.setThumbnail(current.thumbnail);
     } else {
-      embed.setDescription(getTranslation(lang, 'queue.empty'));
+      embed
+        .setDescription(
+          `**${getTranslation(lang, 'queue.empty')}**\n\n` +
+            `✨ ${getTranslation(lang, 'player.requestTitle')}`
+        )
+        .setFooter({
+          text: `Prefix: ${config.prefix} | Multi-language (ES / EN / PT)`,
+        });
     }
 
     return embed;

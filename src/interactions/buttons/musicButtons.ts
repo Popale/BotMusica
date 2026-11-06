@@ -3,6 +3,7 @@ import { RepeatMode } from 'distube';
 import type { BotClient } from '../../client/BotClient.js';
 import { getTranslation } from '../../i18n/index.js';
 import { MusicEmbeds } from '../../music/MusicEmbeds.js';
+import { resetRequestChannel, syncRequestChannel } from '../../music/requestChannelManager.js';
 import { ButtonHandler } from '../../types/index.js';
 
 export const musicButtonHandler: ButtonHandler = {
@@ -18,6 +19,7 @@ export const musicButtonHandler: ButtonHandler = {
     const customId = interaction.customId;
     const config = await client.guildRepo.get(guildId);
     const lang = config.language;
+    const isRequestMsg = Boolean(config.requestMessageId && interaction.message.id === config.requestMessageId);
 
     // Handle pagination for queue
     if (customId.startsWith('music:queue_page:')) {
@@ -43,7 +45,13 @@ export const musicButtonHandler: ButtonHandler = {
         } else {
           queue.pause();
         }
-        await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        if (isRequestMsg) {
+          await interaction.deferUpdate();
+          await syncRequestChannel(client, guildId, queue);
+        } else {
+          await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+          await syncRequestChannel(client, guildId, queue);
+        }
         break;
       }
 
@@ -51,6 +59,7 @@ export const musicButtonHandler: ButtonHandler = {
         if (queue.songs.length <= 1 && !queue.autoplay) {
           await queue.stop();
           await interaction.reply({ content: getTranslation(lang, 'commands.stopped'), flags: MessageFlags.Ephemeral });
+          await resetRequestChannel(client, guildId);
         } else {
           await queue.skip();
           await interaction.reply({ content: getTranslation(lang, 'commands.skipped'), flags: MessageFlags.Ephemeral });
@@ -70,7 +79,8 @@ export const musicButtonHandler: ButtonHandler = {
 
       case 'music:stop': {
         await queue.stop();
-        await interaction.reply({ content: getTranslation(lang, 'commands.stopped') });
+        await interaction.reply({ content: getTranslation(lang, 'commands.stopped'), flags: MessageFlags.Ephemeral });
+        await resetRequestChannel(client, guildId);
         break;
       }
 
@@ -81,27 +91,43 @@ export const musicButtonHandler: ButtonHandler = {
         else nextMode = RepeatMode.DISABLED;
 
         queue.setRepeatMode(nextMode);
-        await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        if (!isRequestMsg) {
+          await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        } else {
+          await interaction.deferUpdate();
+        }
+        await syncRequestChannel(client, guildId, queue);
         break;
       }
 
       case 'music:shuffle': {
         await queue.shuffle();
         await interaction.reply({ content: getTranslation(lang, 'commands.shuffleDone'), flags: MessageFlags.Ephemeral });
+        await syncRequestChannel(client, guildId, queue);
         break;
       }
 
       case 'music:vol_down': {
         const newVol = Math.max(0, queue.volume - 10);
         queue.setVolume(newVol);
-        await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        if (!isRequestMsg) {
+          await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        } else {
+          await interaction.deferUpdate();
+        }
+        await syncRequestChannel(client, guildId, queue);
         break;
       }
 
       case 'music:vol_up': {
         const newVol = Math.min(100, queue.volume + 10);
         queue.setVolume(newVol);
-        await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        if (!isRequestMsg) {
+          await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        } else {
+          await interaction.deferUpdate();
+        }
+        await syncRequestChannel(client, guildId, queue);
         break;
       }
 
@@ -113,7 +139,12 @@ export const musicButtonHandler: ButtonHandler = {
 
       case 'music:toggle_autoplay': {
         queue.toggleAutoplay();
-        await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        if (!isRequestMsg) {
+          await interaction.update({ components: MusicEmbeds.playerControls(queue, config) });
+        } else {
+          await interaction.deferUpdate();
+        }
+        await syncRequestChannel(client, guildId, queue);
         break;
       }
 

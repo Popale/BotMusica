@@ -1,20 +1,30 @@
-import { Events, GuildMember, Message, VoiceBasedChannel } from 'discord.js';
+import { Events, GuildMember, GuildTextBasedChannel, Message, VoiceBasedChannel } from 'discord.js';
 import type { BotClient } from '../client/BotClient.js';
 import { getTranslation } from '../i18n/index.js';
 
 export function registerMessageEvents(client: BotClient): void {
   client.on(Events.MessageCreate, async (message: Message) => {
-    if (message.author.bot || !message.guildId || !message.member) return;
+    if (!message.guildId) return;
 
     const config = await client.guildRepo.get(message.guildId);
 
-    // 1. Dedicated Song Request Channel (No prefix needed in request channel!)
+    // 1. Dedicated Song Request Channel (No prefix needed; clean single-message channel)
     if (config.requestChannelId && message.channelId === config.requestChannelId) {
+      // Ignore the bot's own persistent message
+      if (config.requestMessageId && message.id === config.requestMessageId) return;
+
+      // Delete any incoming message so the channel stays clean
+      await message.delete().catch(() => null);
+
+      if (message.author.bot || !message.member) return;
+
+      const channel = message.channel as GuildTextBasedChannel;
       const voiceChannel = message.member.voice.channel;
       if (!voiceChannel) {
-        const reply = await message.reply('⚠️ Please join a voice channel first!');
-        setTimeout(() => void reply.delete().catch(() => null), 4000);
-        setTimeout(() => void message.delete().catch(() => null), 2000);
+        const reply = await channel.send(
+          `⚠️ <@${message.author.id}>, ${getTranslation(config.language, 'common.voiceRequired')}`
+        );
+        setTimeout(() => void reply.delete().catch(() => null), 3500);
         return;
       }
 
@@ -23,16 +33,20 @@ export function registerMessageEvents(client: BotClient): void {
 
       try {
         await client.distube.play(voiceChannel, query, {
-          textChannel: message.channel as any,
+          textChannel: channel as any,
           member: message.member,
         });
       } catch (err) {
         console.error('Request channel error:', err);
-      } finally {
-        setTimeout(() => void message.delete().catch(() => null), 1500);
+        const errMsg = await channel.send(
+          `⚠️ Error: ${err instanceof Error ? err.message : 'No se pudo reproducir la solicitud'}`
+        );
+        setTimeout(() => void errMsg.delete().catch(() => null), 3500);
       }
       return;
     }
+
+    if (message.author.bot || !message.member) return;
 
     // 2. Standard Prefix Command Processing
     if (!message.content.startsWith(config.prefix)) return;
@@ -142,4 +156,3 @@ export function registerMessageEvents(client: BotClient): void {
     }
   });
 }
-

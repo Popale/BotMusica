@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
 import { MusicEmbeds } from '../../music/MusicEmbeds.js';
+import { resetRequestChannel } from '../../music/requestChannelManager.js';
 import { Command } from '../../types/index.js';
 
 export const stopCommand: Command = {
@@ -21,8 +22,16 @@ export const stopCommand: Command = {
       return;
     }
 
+    const config = await client.guildRepo.get(guildId);
+    const isReqChannel = Boolean(config.requestChannelId && interaction.channelId === config.requestChannelId);
+
     await queue.stop();
     const embed = MusicEmbeds.info('Detenido', '⏹️ La música se ha detenido y la cola fue vaciada.');
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+      embeds: [embed],
+      flags: isReqChannel ? MessageFlags.Ephemeral : undefined,
+    });
+
+    await resetRequestChannel(client, guildId);
   },
 };

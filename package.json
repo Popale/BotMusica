@@ -24,7 +24,9 @@
     "@discordjs/voice": "^0.19.2",
     "@distube/soundcloud": "^2.0.4",
     "@distube/spotify": "^2.0.2",
+    "@distube/youtube": "^1.1.0",
     "@distube/yt-dlp": "^2.0.1",
+    "@distube/ytdl-core": "^5.2.1",
     "@napi-rs/canvas": "^1.1.0",
     "discord.js": "^14.18.0",
     "distube": "^5.2.3",
@@ -39,5 +41,8 @@
     "rimraf": "^6.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
+  },
+  "overrides": {
+    "@distube/ytdl-core": "^5.2.1"
   }
 }

@@ -1,22 +1,23 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   ChannelType,
   ChatInputCommandInteraction,
+  GuildTextBasedChannel,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
 import type { BotClient } from '../../client/BotClient.js';
-import { getTranslation } from '../../i18n/index.js';
-import { MusicEmbeds } from '../../music/MusicEmbeds.js';
 import { Command } from '../../types/index.js';
+import { MusicEmbeds } from '../../music/MusicEmbeds.js';
+import {
+  buildRequestChannelButtons,
+  purgeRequestChannelExcept,
+} from '../../music/requestChannelManager.js';
 
 export const setupCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('setup')
-    .setDescription('Creates or links a dedicated song request channel with live interactive queue')
+    .setDescription('Creates or links a dedicated song request channel with a persistent player panel')
     .addChannelOption((opt) =>
       opt
         .setName('canal')
@@ -49,22 +50,18 @@ export const setupCommand: Command = {
       });
     }
 
-    const targetChannel = channel as any;
+    const targetChannel = channel as GuildTextBasedChannel;
     const config = await client.guildRepo.get(guild.id);
-    const lang = config.language;
+
+    // Clean existing messages in channel first so only one message will exist
+    await purgeRequestChannelExcept(targetChannel);
 
     const embed = MusicEmbeds.requestSystemEmbed(undefined, config);
-    const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('music:stop').setEmoji('⏹️').setLabel(getTranslation(lang, 'buttons.stop')).setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('music:previous').setEmoji('⏮️').setLabel(getTranslation(lang, 'buttons.previous')).setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId('music:pause_resume').setEmoji('⏯️').setLabel(getTranslation(lang, 'buttons.pause')).setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('music:skip').setEmoji('⏭️').setLabel(getTranslation(lang, 'buttons.skip')).setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId('music:shuffle').setEmoji('🔀').setLabel(getTranslation(lang, 'buttons.shuffle')).setStyle(ButtonStyle.Secondary)
-    );
+    const components = buildRequestChannelButtons(config, false);
 
     const message = await targetChannel.send({
       embeds: [embed],
-      components: [buttons],
+      components,
     });
 
     await client.guildRepo.update(guild.id, {

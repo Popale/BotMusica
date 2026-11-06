@@ -8,9 +8,10 @@ import {
 import DisTube from 'distube';
 import type { DisTubePlugin } from 'distube';
 import ffmpegStatic from 'ffmpeg-static';
-import { YtDlpPlugin } from '@distube/yt-dlp';
+import { YouTubePlugin } from '@distube/youtube';
 import { SpotifyPlugin } from '@distube/spotify';
 import { SoundCloudPlugin } from '@distube/soundcloud';
+import { YtDlpPlugin } from '@distube/yt-dlp';
 import { env } from '../config/env.js';
 import { IGuildConfigRepository } from '../database/repositories/IGuildConfigRepository.js';
 import { JsonGuildConfigRepository } from '../database/repositories/JsonGuildConfigRepository.js';
@@ -67,6 +68,7 @@ export class BotClient extends Client {
         path: resolvedFfmpegPath,
       },
       plugins: [
+        new YouTubePlugin() as unknown as DisTubePlugin,
         new SpotifyPlugin({ api: spotifyApi }) as unknown as DisTubePlugin,
         new SoundCloudPlugin() as unknown as DisTubePlugin,
         new YtDlpPlugin() as unknown as DisTubePlugin,

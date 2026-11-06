@@ -1,6 +1,7 @@
 import {
   ChatInputCommandInteraction,
   GuildMember,
+  MessageFlags,
   SlashCommandBuilder,
   VoiceBasedChannel,
 } from 'discord.js';
@@ -25,8 +26,15 @@ export const playCommand: Command = {
     const query = interaction.options.getString('cancion', true);
     const member = interaction.member as GuildMember;
     const voiceChannel = member.voice.channel as VoiceBasedChannel;
+    const guildId = interaction.guildId;
 
-    await interaction.deferReply();
+    let isReqChannel = false;
+    if (guildId) {
+      const config = await client.guildRepo.get(guildId);
+      isReqChannel = Boolean(config.requestChannelId && interaction.channelId === config.requestChannelId);
+    }
+
+    await interaction.deferReply(isReqChannel ? { flags: MessageFlags.Ephemeral } : undefined);
 
     try {
       await client.distube.play(voiceChannel, query, {

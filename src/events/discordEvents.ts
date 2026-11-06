@@ -3,14 +3,20 @@ import type { BotClient } from '../client/BotClient.js';
 import { checkDjGuard } from '../guards/djGuard.js';
 import { checkVoiceGuard } from '../guards/voiceGuard.js';
 import { MusicEmbeds } from '../music/MusicEmbeds.js';
+import { resetRequestChannel } from '../music/requestChannelManager.js';
 
 export function registerDiscordEvents(client: BotClient): void {
-  client.once(Events.ClientReady, (readyClient) => {
+  client.once(Events.ClientReady, async (readyClient) => {
     console.log(`🤖 Bot iniciado con éxito como: ${readyClient.user.tag}`);
     readyClient.user.setActivity({
       name: '🎶 /play',
       type: ActivityType.Listening,
     });
+
+    // Cleanup and synchronize configured request channels on startup
+    for (const [guildId] of readyClient.guilds.cache) {
+      await resetRequestChannel(client, guildId).catch(() => null);
+    }
   });
 
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {

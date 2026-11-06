@@ -4,6 +4,7 @@ import type { Playlist, Queue, Song } from 'distube';
 import type { BotClient } from '../client/BotClient.js';
 import { generateMusicCard } from '../music/card/musicCardGenerator.js';
 import { MusicEmbeds } from '../music/MusicEmbeds.js';
+import { resetRequestChannel, syncRequestChannel } from '../music/requestChannelManager.js';
 
 export function registerMusicEvents(client: BotClient): void {
   const { distube } = client;
@@ -15,14 +16,21 @@ export function registerMusicEvents(client: BotClient): void {
 
       const guildId = queue.id;
       const config = await client.guildRepo.get(guildId);
+      const isReqChannel = Boolean(config.requestChannelId && channel.id === config.requestChannelId);
 
+      // Dedicated request channel: NEVER send a new message in this channel!
+      if (isReqChannel) {
+        await syncRequestChannel(client, guildId, queue);
+        return;
+      }
+
+      // Regular text channel (e.g. #general with /play or !play)
       const sourceName = song.url?.includes('spotify')
         ? 'Spotify'
         : song.url?.includes('soundcloud')
         ? 'SoundCloud'
         : 'YouTube';
 
-      // 1. Generate Custom Canvas Music Card
       const cardBuffer = await generateMusicCard({
         title: song.name || 'Unknown Track',
         artist: song.uploader?.name || 'Unknown Artist',
@@ -46,20 +54,8 @@ export function registerMusicEvents(client: BotClient): void {
         messageId: message.id,
       });
 
-      // 2. Update Dedicated Request Channel if configured
       if (config.requestChannelId && config.requestMessageId) {
-        try {
-          const reqChannel = (await client.channels.fetch(config.requestChannelId)) as GuildTextBasedChannel;
-          if (reqChannel) {
-            const reqMessage = await reqChannel.messages.fetch(config.requestMessageId);
-            if (reqMessage) {
-              const reqEmbed = MusicEmbeds.requestSystemEmbed(queue, config);
-              await reqMessage.edit({ embeds: [reqEmbed] });
-            }
-          }
-        } catch {
-          // ignore error if message deleted
-        }
+        await syncRequestChannel(client, guildId, queue);
       }
     } catch (err) {
       console.error('Error en playSong:', err);
@@ -72,8 +68,14 @@ export function registerMusicEvents(client: BotClient): void {
       if (!channel) return;
 
       const config = await client.guildRepo.get(queue.id);
-      const colorInt = parseInt(config.themeColor.replace('#', ''), 16) || 0xfd5279;
+      const isReqChannel = Boolean(config.requestChannelId && channel.id === config.requestChannelId);
 
+      if (isReqChannel) {
+        await syncRequestChannel(client, queue.id, queue);
+        return;
+      }
+
+      const colorInt = parseInt(config.themeColor.replace('#', ''), 16) || 0xfd5279;
       const embed = new EmbedBuilder()
         .setColor(colorInt)
         .setAuthor({ name: '✅ Track Enqueued' })
@@ -87,6 +89,10 @@ export function registerMusicEvents(client: BotClient): void {
 
       if (song.thumbnail) embed.setThumbnail(song.thumbnail);
       await channel.send({ embeds: [embed] });
+
+      if (config.requestChannelId && config.requestMessageId) {
+        await syncRequestChannel(client, queue.id, queue);
+      }
     } catch (err) {
       console.error('Error en addSong:', err);
     }
@@ -98,8 +104,14 @@ export function registerMusicEvents(client: BotClient): void {
       if (!channel) return;
 
       const config = await client.guildRepo.get(queue.id);
-      const colorInt = parseInt(config.themeColor.replace('#', ''), 16) || 0xfd5279;
+      const isReqChannel = Boolean(config.requestChannelId && channel.id === config.requestChannelId);
 
+      if (isReqChannel) {
+        await syncRequestChannel(client, queue.id, queue);
+        return;
+      }
+
+      const colorInt = parseInt(config.themeColor.replace('#', ''), 16) || 0xfd5279;
       const embed = new EmbedBuilder()
         .setColor(colorInt)
         .setTitle('✅ Playlist Added')
@@ -112,6 +124,10 @@ export function registerMusicEvents(client: BotClient): void {
 
       if (playlist.thumbnail) embed.setThumbnail(playlist.thumbnail);
       await channel.send({ embeds: [embed] });
+
+      if (config.requestChannelId && config.requestMessageId) {
+        await syncRequestChannel(client, queue.id, queue);
+      }
     } catch (err) {
       console.error('Error en addList:', err);
     }
@@ -119,6 +135,17 @@ export function registerMusicEvents(client: BotClient): void {
 
   distube.on(Events.FINISH, async (queue: Queue) => {
     client.activePlayerMessages.delete(queue.id);
+    await resetRequestChannel(client, queue.id);
+  });
+
+  distube.on(Events.DELETE_QUEUE, async (queue: Queue) => {
+    client.activePlayerMessages.delete(queue.id);
+    await resetRequestChannel(client, queue.id);
+  });
+
+  distube.on(Events.DISCONNECT, async (queue: Queue) => {
+    client.activePlayerMessages.delete(queue.id);
+    await resetRequestChannel(client, queue.id);
   });
 
   distube.on(Events.ERROR, (error: Error, queue: Queue) => {
@@ -130,11 +157,19 @@ export function registerMusicEvents(client: BotClient): void {
         ? '⚠️ Stream blocked by provider. Trying alternate format or source...'
         : `⚠️ Playback error: \`${error.message.slice(0, 120)}\``;
       const embed = new EmbedBuilder().setColor(0xed4245).setDescription(desc);
-      void channel.send({ embeds: [embed] }).catch(() => null);
+      channel
+        .send({ embeds: [embed] })
+        .then((msg) => {
+          const guildId = channel.guildId || queue?.id;
+          if (guildId) {
+            client.guildRepo.get(guildId).then((cfg) => {
+              if (cfg.requestChannelId && channel.id === cfg.requestChannelId) {
+                setTimeout(() => void msg.delete().catch(() => null), 4000);
+              }
+            });
+          }
+        })
+        .catch(() => null);
     }
-  });
-
-  distube.on(Events.DISCONNECT, (queue: Queue) => {
-    client.activePlayerMessages.delete(queue.id);
   });
 }
