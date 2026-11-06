@@ -1,0 +1,43 @@
+{
+  "name": "botmusica",
+  "version": "1.0.0",
+  "description": "Advanced scalable Discord music bot with interactive embeds, DJ roles, and rich controls",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "deploy": "tsx src/deploy.ts"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "music",
+    "distube",
+    "dj-role",
+    "discordjs-v14"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "@distube/soundcloud": "^2.0.4",
+    "@distube/spotify": "^2.0.2",
+    "@distube/yt-dlp": "^2.0.1",
+    "@napi-rs/canvas": "^1.1.0",
+    "discord.js": "^14.18.0",
+    "distube": "^5.2.3",
+    "dotenv": "^16.4.7",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.15",
+    "opusscript": "^0.1.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
